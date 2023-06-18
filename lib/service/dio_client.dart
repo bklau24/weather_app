@@ -1,59 +1,34 @@
 import 'package:dio/dio.dart';
-import 'package:weather_app/model/weather_model.dart';
+import 'package:weather_app/main.dart';
+import 'package:weather_app/screen/error_screen.dart';
 import '../config.dart';
 
 class DioClient {
   final Dio _dio = Dio();
+  Dio get dio => _dio;
 
-  DioClient();
-
-  Future<List<Weather>?> getForecastWeather(String country) async {
-    List<Weather> weatherlist = [];
-    await _dio.get("${AppConfig.apiUrl}forecast", queryParameters: {
-      'q': country,
-      'APPID': AppConfig.apiKey
-    }).then(((Response response) {
-      if (response.data != null) {
-        List<dynamic> list = response.data["list"];
-        for (var element in list) {
-          String dttxt = element["dt_txt"];
-          double kelvinMin =
-              double.parse(element["main"]["temp_min"].toString());
-          int celciusMin = (kelvinMin - 273.15).round();
-          double kelvinMax =
-              double.parse(element["main"]["temp_max"].toString());
-          int celciusMax = (kelvinMax - 273.15).round();
-          weatherlist.add(Weather(
-              dttxt.substring(5, 10),
-              dttxt.substring(11, 16),
-              celciusMin,
-              celciusMax,
-              element["weather"][0]["main"].toString(),
-              element["weather"][0]["description"].toString()));
-        }
-      }
-    })).catchError((e) {
-      throw (e);
-    });
-    return weatherlist;
+  DioClient() {
+    setDioClient();
   }
 
-  Future<int> getCurrentWeather(String country) async {
-    int currentCelcius = 0;
-    await _dio.get("${AppConfig.apiUrl}weather", queryParameters: {
-      'q': country,
-      'APPID': AppConfig.apiKey
-    }).then(((Response response) {
-      if (response.data != null) {
-        if (response.data != null) {
-          double kelvin =
-              double.parse(response.data["main"]["temp"].toString());
-          currentCelcius = (kelvin - 273.15).round();
-        }
-      }
-    })).catchError((e) {
-      throw (e);
-    });
-    return currentCelcius;
+  setDioClient() {
+    _dio.options.baseUrl = AppConfig.apiUrl;
+    _dio.options.connectTimeout = const Duration(seconds: 3);
+    _dio.options.receiveTimeout = const Duration(seconds: 3);
+    _dio.interceptors.add(InterceptorsWrapper(
+        onRequest: (RequestOptions options, RequestInterceptorHandler handler) {
+      handleAPIKey(options);
+      return handler.next(options);
+    }, onError: (DioException dioError, ErrorInterceptorHandler handler) {
+      handleError();
+    }));
+  }
+
+  handleAPIKey(RequestOptions options) {
+    options.queryParameters.putIfAbsent('APPID', () => AppConfig.apiKey);
+  }
+
+  handleError() {
+    navigatorKey.currentState?.pushReplacementNamed(ErrorScreen.routeName);
   }
 }

@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:weather_app/screen/error_screen.dart';
 import 'package:weather_app/service/weather_provider.dart';
 import 'package:provider/provider.dart';
 import 'screen/main_screen.dart';
+
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 void main() {
   runApp(const MyApp());
@@ -43,7 +46,12 @@ class _MyHomePageState extends State<MyHomePage> {
     return ChangeNotifierProvider(
         create: (context) => WeatherProvider(),
         child: MaterialApp(
+          navigatorKey: navigatorKey,
           home: MainScreen(),
+          routes: {
+            MainScreen.routeName: (context) => MainScreen(),
+            ErrorScreen.routeName: (context) => ErrorScreen(),
+          },
         ));
   }
 }
